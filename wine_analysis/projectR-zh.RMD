@@ -1,0 +1,302 @@
+TITLE by Bi
+========================================================
+```{r golbal_options, include=FALSE}
+knitr::opts_chunk$set(message = FALSE,warning = FALSE,echo = FALSE)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
+# 加载你最终使用的所有组件
+# 在这个代码块的分析中。
+
+# 注意，在这个代码块中，将参数 "echo" 设为假。
+# This prevents the code from displaying in the knitted HTML output.这可以避免代码混入 HTML 输出显示。
+# 应当在文件中，对所有代码块设为 echo=FALSE 。
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+library(tidyr)
+```
+# 单变量分析
+
+```{r echo=FALSE, Load_the_Data}
+# 加载数据
+setwd('D:\\udacity\\project2')
+wine<-read.csv('wineQualityReds.csv',sep = ',')
+wine$rating<-ifelse(wine$quality<5,'c',ifelse(wine$quality<7,'b','a'))
+str(wine)
+```
+
+
+# 单变量绘图选择
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+qplot(quality,data=wine)
+```
+
+大部分红酒等级集中在5和6，优质酒和劣酒都是少数
+
+```{r}
+qplot(fixed.acidity,data=wine)
+qplot(volatile.acidity,data=wine)
+qplot(citric.acid,data=wine)
+```
+
+固定酸，挥发酸和柠檬酸的分布。柠檬酸出现大量零值，柠檬酸是可选配料或者是数据缺失造成。
+
+
+```{r}
+qplot(x=residual.sugar,data=wine)
+```
+
+糖含量集中在1-3之间，有较大离散值，与质量曲线区别较大。
+
+```{r}
+qplot(x=chlorides,data=wine)
+```
+
+氯化物的分布值在0.05-0.12之间，有离散值，与与质量曲线差异较大。
+
+```{r}
+p1<-qplot(free.sulfur.dioxide,data=wine)
+p2<-qplot(log(free.sulfur.dioxide),data=wine)
+grid.arrange(p1,p2,ncol=2)
+summary(wine$free.sulfur.dioxide)
+```
+
+游离二氧化硫分布有长尾现象，取对数后则呈正态分布。最大数量集中在1.5和3.5之间
+
+```{r}
+p1<-qplot(total.sulfur.dioxide,data=wine)
+p2<-qplot(log(total.sulfur.dioxide),data=wine)
+grid.arrange(p1,p2,ncol=2)
+summary(wine$total.sulfur.dioxide)
+```
+
+总二氧化硫成分和游离二氧化硫类似，取对数后呈正态分布。
+
+```{r}
+qplot(pH,data=wine)
+summary(wine$pH)
+```
+
+ph值呈正态分布，平均值和中位数都为3.31，最大值为4.01。整体偏酸性。
+
+```{r}
+qplot(x=density,data=wine)
+```
+
+稠度呈正态分布，可能与质量有关
+
+```{r}
+qplot(x=sulphates,data=wine)
+```
+
+硫酸盐的分布在0.5~0.8之间，有少量极值。估计和质量没有太大关联。
+
+```{r}
+qplot(alcohol,data=wine)
+summary(wine$alcohol)
+```
+
+酒精含量集中在9-13之间，相差不大。
+
+
+
+
+
+### 你的数据集结构是什么？
+
+数据包含13个变量和1599个数据项。
+样本质量分布等级3-8，数字越大越好。
+其他发现：
+. 大部分红酒质量集中在等级5-6之间
+. 部分红酒柠檬酸含量为0
+. 氯化物含量与糖含量分布图有相似点，可能存在关联。
+
+
+### 你的数据集内感兴趣的主要特性有哪些？
+
+酒的好坏与发酵程度，也就是酒精含量有直接关系，所以酒精含量多少可能是影响质量的关键。
+
+
+### 你认为数据集内哪些其他特征可以帮助你探索兴趣特点？
+
+含糖量和酸性也可能会影响口感，那么含糖量和含酸量是否会影响其他参数，比如粘稠度和ph值
+
+
+### 根据数据集内已有变量，你是否创建了任何新变量？
+
+新建变量rating,按质量等级将酒分成3类，小于5分（c类），6-7分（b类），大于7分（a类）.
+
+
+### 在已经探究的特性中，是否存在任何异常分布？你是否对数据进行一些操作，如清洁、调整或改变数据的形式？如果是，你为什么会这样做？
+
+游离二氧化硫和总二氧化硫出现长尾分布，对x轴取对数后呈正态分布
+
+
+# 双变量绘图选择
+
+### 各参数与质量的关系程度
+
+```{r}
+wine_origin<-select(wine,-starts_with("rating"))
+for(i in names(wine_origin)){print(paste(i,cor.test(wine_origin[,i], wine_origin$quality,method='pearson')$estimate))}
+```
+首先列出所有变量与质量之间的关系，可以看出alcohol，volatile.acidity和sulphates排列前3, 所以就针对这3个变量分析。
+
+### 硫酸盐与质量的关系
+
+```{r echo=FALSE, Bivariate_Plots}
+ggplot(aes(factor(quality),sulphates),data = wine)+
+  geom_jitter(alpha=0.1)+geom_boxplot(alpha=0.7)
+ggplot(aes(quality, sulphates, group=1),data=wine) +
+  geom_line(stat='summary',fun.y=mean)+
+  ylab('avg(sulphates)')
+
+```
+
+折线图明显的展示了硫酸盐对提升质量有显著帮助，可以看出3类红酒与8类红酒硫酸盐含量的巨大差异。但在箱线图中，这种差异表现的并不明显。在点阵图中，高档酒的硫酸盐含量普遍高于低档，但差异不大。所以结论是硫酸盐与质量有正相关。
+
+### 挥发酸与质量的关系
+
+```{r}
+ggplot(aes(factor(quality),volatile.acidity),data=wine)+
+  geom_boxplot(alpha = 0.7)+
+  geom_jitter(alpha = 0.1)
+ggplot(aes(quality, volatile.acidity, group=1),data=wine)+  
+  geom_line(stat='summary',fun.y=mean)+ylab('avg(sulphates)')
+
+```
+
+从图中可以看出除了7和8类出现了增长，总的相关趋势是呈负相关。可以理解为质量鉴定是一种主观行为，7类和8类都属于高档类红酒。当参数到达一定程度时，对总体的影响忽略不计。而更多是其他因素的影响
+
+###酒精与质量的关系
+
+```{r}
+ggplot(aes(factor(quality),alcohol),data=wine)+geom_boxplot(alpha = 0.7)+
+  geom_jitter(alpha=0.1)
+ggplot(aes(quality, alcohol, group=1),data=wine) +
+  geom_line(stat='summary',fun.y=mean)+ylab('avg(alcohol)')
+```
+
+观察这3幅图，点图显示，随着质量的提升，点阵有上移趋势。再看折线图，除了5类红酒外，酒精平均含量与质量总体呈正相关关系。这可能是由于异常值过多导致。所以可以确定，酒精浓度与红酒质量有直接关系。
+
+
+### 三种酸与pH值的关系
+
+```{r}
+cor.test(wine$fixed.acidity,wine$pH,method='pearson')
+cor.test(wine$volatile.acidity,wine$pH,method='pearson')
+cor.test(wine$citric,wine$pH,method='pearson')
+```
+
+
+```{r}
+ggplot(aes(pH, fixed.acidity, group=1),data=wine) +
+  geom_line(stat='summary',fun.y=mean)+
+  ylab('avg(fixed.acidity)')+geom_smooth()
+ggplot(aes(pH, volatile.acidity, group=1),data=wine) + geom_line(stat='summary',fun.y=mean)+
+  ylab('avg(volatile.acidity)')+geom_smooth()
+ggplot(aes(pH, citric.acid, group=1),data=wine) + geom_line(stat='summary',fun.y=mean)+
+  ylab('avg(citric)')+geom_smooth()
+```
+
+挥发酸与柠檬酸与pH值呈反比关系，因为酸性越大，pH值越低。但挥发酸却与pH值呈正比关系
+
+
+# 双变量分析
+
+### 探讨你在这部分探究中观察到的一些关系。这些感兴趣的特性与数据集内其他特性有什么区别？
+
+挥发酸却pH值呈正比关系，按理说酸性越大ph值越低。可能红酒中采用的挥发性酸酸性较弱，低于酸性平均值。
+
+### 你是否观察到主要特性与其他特性之间的有趣关系？
+
+主要特性设为质量。质量与alcohol和sulphates有正相关，与volatile.acidity有负相关。与糖含量的关联最低，与酒精含量关系最高。
+
+### 你发现最强的关系是什么？
+
+酒精浓度与质量的关系。酒精含量直接影响质量。
+
+
+
+# 多变量绘图选择
+
+```{r echo=FALSE, Multivariate_Plots}
+ggplot(aes(x = pH, y = residual.sugar, color = quality), data = wine)+
+  geom_jitter(alpha = 0.5)+scale_y_continuous(breaks = seq(1,12,1))
+ggplot(aes(x = fixed.acidity, y = volatile.acidity, color = pH), data = wine)+
+  geom_jitter(alpha = 0.2)
+ggplot(aes(x = fixed.acidity, y = citric.acid, color = pH), data = wine)+
+  geom_jitter(alpha = 0.3)
+ggplot(aes(x=alcohol,y=volatile.acidity,color = factor(quality)),data=wine)+
+  geom_point(alpha=0.5)+scale_color_brewer(palette = "Blues")
+```
+
+
+
+# 多变量分析
+
+###  探讨你在这部分探究中观察到的一些关系。通过观察感兴趣的特性，是否存在相互促进的特性？
+
+糖和pH值没有可见的影响，事实上这2个值表现的非常集中，糖分大部分在1-3之间，而pH值在3-3.5之间。猜测在酿造过程中，这2个值是可控的。
+
+酒精和挥发酸对质量都有明显作用，3-4类酒的挥发酸含量明显高于其他几类，同时酒精含量也比其他低，坐标点聚集在左上方，而7-8类则有着高酒精和低挥发酸，多数在右下。
+
+
+### 这些特性之间是否存在有趣或惊人的联系呢？
+
+1. pH值和糖对质量影响不大。
+2. 固定酸在pH值中起主要作用。是调节酸性的主要成分。
+
+### 选项：你是否创建过数据集的任何模型？讨论你模型的优缺点。
+
+------
+
+# 定稿图与总结
+
+### 绘图一
+```{r echo=FALSE, Plot_One}
+qplot(quality,data=wine,xlab = 'quality',ylab='count',main='quality')
+```
+
+### 描述一
+样本中3～4类（劣质）和7～8类酒（优质）都是少数，5～6类酒占多数量。相比之下，优质酒的数量还是要多于劣质酒。说明这批酒的质量较好。
+
+
+### 绘图二
+```{r echo=FALSE, Plot_Two}
+ggplot(aes(factor(quality),alcohol,fill = rating),data=wine)+
+  geom_boxplot(alpha = 0.7)+
+  geom_jitter(alpha=0.1)+scale_fill_brewer(palette = "Blues")+xlab('quality')+ylab('alcohol')+
+  ggtitle('alcohol vs quality')
+```
+
+### 描述二
+酒精浓度对酒品质有影响，但这种影响在高档酒上表现的比较突出。而在中低端酒上，则不怎么明显。
+
+### 绘图三
+```{r echo=FALSE, Plot_Three}
+ggplot(aes(x=alcohol,y=volatile.acidity,color = factor(quality)),data=wine)+
+  geom_point()+
+  geom_smooth(method = "lm", se = FALSE,size=1)+
+  scale_color_brewer(palette = "Blues")+
+  ggtitle("rating VS alcohol VS volatile.acidity")+
+  ylim(0.2, 1.0)
+```
+
+### 描述三
+
+去掉离散值后，将酒精和挥发酸组合起来查看对质量的影响.在酒精含量较低的状态下，挥发酸含量越低等级越高，但随着酒精含量的上升，挥发酸的因素变得不再重要。所以结论是低质酒减少挥发酸能改善质量，而要成为优质，必须保证酒精含量。
+
+------
+
+# 反思
+红酒数据集包括12个变量，1599瓶红酒的信息。
+单变量分析时，对各变量都进行了探索。对数据的分布有一个简单的了解。
+后来双变量分析后，找出了与品质相关性最大的3个参数，经过逐一分析后找出了基本关系，并确认了酒精含量是最大的影响参数。
+最后多变量分析时，彻底排除了酸度和糖份的影响。而将酒精和固定酸列为首要因素。
+在项目开始前，主观上认为糖分、稠度和酒精是决定性的因素。但在分析后认识到糖分和稠度其实关系不大。所以主观结论往往与事实差距很大，考虑问题还是要多一个维度，会更加的客观，发现真相。
+
+提议：
+可以加入酒的生产过程中的一些数据，比如产地，发酵情况和存放时间。这样综合起来就能对酒内成分的产生原因，比如酒精浓度有更深入的分析。
+
