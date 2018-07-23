@@ -1,0 +1,7 @@
+osm file: 
+https://s3.amazonaws.com/mapzen.odes/ex_KczNWHKgBcxr5T9q7mueFSD7JP6Jj.osm.bz2
+
+Reference:
+https://docs.python.org/2/library/xml.etree.elementtree.html
+http://www.runoob.com/regexp/regexp-syntax.html
+http://discussions.youdaxue.com/t/sql-values-in-csv-are-not-correct/36727
